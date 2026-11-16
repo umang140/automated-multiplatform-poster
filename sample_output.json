@@ -1,0 +1,86 @@
+{
+  "success": true,
+  "results": [
+    {
+      "platform": "Telegram",
+      "status": "failed",
+      "posted_url": null,
+      "public_access": false,
+      "date": null,
+      "time": null,
+      "error": "Missing credentials: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID"
+    },
+    {
+      "platform": "Discord",
+      "status": "failed",
+      "posted_url": null,
+      "public_access": false,
+      "date": null,
+      "time": null,
+      "error": "Missing credentials: DISCORD_WEBHOOK_URL"
+    },
+    {
+      "platform": "Slack",
+      "status": "failed",
+      "posted_url": null,
+      "public_access": false,
+      "date": null,
+      "time": null,
+      "error": "Missing credentials: SLACK_WEBHOOK_URL"
+    },
+    {
+      "platform": "Mastodon",
+      "status": "failed",
+      "posted_url": null,
+      "public_access": false,
+      "date": null,
+      "time": null,
+      "error": "Missing credentials: MASTODON_ACCESS_TOKEN"
+    },
+    {
+      "platform": "GitHub Gist",
+      "status": "failed",
+      "posted_url": null,
+      "public_access": false,
+      "date": null,
+      "time": null,
+      "error": "Missing credentials: GITHUB_TOKEN"
+    },
+    {
+      "platform": "Bluesky",
+      "status": "failed",
+      "posted_url": null,
+      "public_access": false,
+      "date": null,
+      "time": null,
+      "error": "Missing credentials: BLUESKY_HANDLE, BLUESKY_APP_PASSWORD"
+    },
+    {
+      "platform": "Hugging Face",
+      "status": "failed",
+      "posted_url": null,
+      "public_access": false,
+      "date": null,
+      "time": null,
+      "error": "Missing credentials: HF_TOKEN, HF_REPO_ID"
+    },
+    {
+      "platform": "Dev.to",
+      "status": "failed",
+      "posted_url": null,
+      "public_access": false,
+      "date": null,
+      "time": null,
+      "error": "Missing credentials: DEVTO_API_KEY"
+    },
+    {
+      "platform": "dpaste",
+      "status": "success",
+      "posted_url": "https://dpaste.com/FN9PA7MQL",
+      "public_access": true,
+      "date": "2026-11-16",
+      "time": "12:03:31",
+      "error": null
+    }
+  ]
+}

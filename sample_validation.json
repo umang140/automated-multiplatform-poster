@@ -1,0 +1,5 @@
+{
+  "success": false,
+  "error": "Exactly one CTA link must be included in the message.",
+  "results": []
+}
