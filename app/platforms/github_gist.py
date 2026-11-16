@@ -6,13 +6,9 @@ from app.platforms.base import BasePlatform
 
 
 class GitHubGistPlatform(BasePlatform):
-    """
-    Publishes the message as a public GitHub Gist via GitHub REST API.
-    Returns the permanent public URL (html_url).
-    """
     name = "GitHub Gist"
 
-    def missing_credentials(self) -> str | None:
+    def missing_credentials(self):
         return self._need(("GITHUB_TOKEN", self.settings.github_token))
 
     async def publish(self, client: httpx.AsyncClient, message: str):
@@ -22,10 +18,9 @@ class GitHubGistPlatform(BasePlatform):
             headers={
                 "Authorization": f"Bearer {self.settings.github_token}",
                 "Accept": "application/vnd.github+json",
-                "X-GitHub-Api-Version": "2022-11-28",
             },
             json={
-                "description": "Automated multi-platform post",
+                "description": "auto post",
                 "public": True,
                 "files": {filename: {"content": message}},
             },

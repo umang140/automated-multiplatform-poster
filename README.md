@@ -1,190 +1,99 @@
-# Automated Multi-Platform Posting System
+# Automated multi-platform posting
 
-A high-performance FastAPI service that validates and publishes short messages across multiple third-party social networks, messaging webhooks, developer portals, and LLM platforms concurrently.
+FastAPI app for the Python practical test.
 
-Built for the **Python Practical Test** (Chivox AI / Dxora Technologies).
+`POST /posting` takes one message, validates it, then publishes it on 9 platforms. The client does not pick platforms. If one API fails, the others still run.
 
----
+## Platforms
 
-## Architecture & Platform Integrations
+| Platform | Docs | Auth | Public? |
+|---|---|---|---|
+| Telegram | https://core.telegram.org/bots/api#sendmessage | bot token + chat id | yes if channel username is set |
+| Discord | https://discord.com/developers/docs/resources/webhook#execute-webhook | webhook url | no |
+| Slack | https://api.slack.com/messaging/webhooks | webhook url | no |
+| Mastodon | https://docs.joinmastodon.org/methods/statuses/ | access token | yes |
+| GitHub Gist | https://docs.github.com/en/rest/gists/gists#create-a-gist | token (`gist` scope) | yes |
+| Bluesky | https://docs.bsky.app/docs/api/com-atproto-repo-create-record | handle + app password | yes |
+| Hugging Face | https://huggingface.co/docs/huggingface_hub/guides/community | token + repo id | yes (LLM hub discussion) |
+| Dev.to | https://developers.forem.com/api/v1#tag/articles/operation/createArticle | api key | yes |
+| dpaste | https://dpaste.com/api/v2/ | none | yes |
 
-The service exposes a single endpoint: `POST /posting`. When a message is submitted, the platform internally handles all platform selection and broadcasts to **9 integrated platforms** in parallel using `asyncio.gather`. 
-
-Each platform is executed in total isolation; an authentication failure, network error, or timeout on one platform never halts or affects the others.
-
-| Platform | Category | Official API Documentation | Public Link? | Required Credentials |
-|---|---|---|:---:|---|
-| **dpaste** | Pastebin Utility | https://dpaste.com/api/v2/ | Yes | *None (zero-config live demo)* |
-| **Telegram** | Messaging / Bots | https://core.telegram.org/bots/api#sendmessage | Yes (if channel) | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` |
-| **Discord** | Team Messaging | https://discord.com/developers/docs/resources/webhook | No (private guild) | `DISCORD_WEBHOOK_URL` |
-| **Slack** | Team Messaging | https://api.slack.com/messaging/webhooks | No (private workspace) | `SLACK_WEBHOOK_URL` |
-| **Mastodon** | Fediverse / Social | https://docs.joinmastodon.org/methods/statuses/ | Yes | `MASTODON_INSTANCE_URL`, `MASTODON_ACCESS_TOKEN` |
-| **GitHub Gist** | Developer Services | https://docs.github.com/en/rest/gists/gists | Yes | `GITHUB_TOKEN` (gist scope) |
-| **Bluesky** | AT Protocol Social | https://docs.bsky.app/docs/api/com-atproto-repo-create-record | Yes | `BLUESKY_HANDLE`, `BLUESKY_APP_PASSWORD` |
-| **Hugging Face** | LLM Platform | https://huggingface.co/docs/huggingface_hub/guides/community | Yes | `HF_TOKEN`, `HF_REPO_ID` |
-| **Dev.to** | Developer Articles | https://developers.forem.com/api/v1#tag/articles/operation/createArticle | Yes | `DEVTO_API_KEY` |
-
-> **Live Demo Highlight:** Because `dpaste` requires zero API credentials, running the service out of the box will immediately post to dpaste and return a live, public, clickable URL alongside clean missing-credential reports for unconfigured platforms.
-
----
+dpaste does not need a key, so a local run still produces at least one real public URL.
 
 ## Project Structure
 
 ```text
 automated-posting/
 ├── app/
-│   ├── main.py                  # FastAPI application, exception handlers & routing
-│   ├── schemas.py               # Pydantic v2 validation models & response envelope
-│   ├── config.py                # Environment configuration & cached settings
-│   ├── platforms/               # Platform adapter implementations
-│   │   ├── __init__.py
-│   │   ├── base.py              # BasePlatform abstract class & error normalization
-│   │   ├── bluesky.py           # AT Protocol (createSession + createRecord)
-│   │   ├── devto.py             # Dev.to articles API
-│   │   ├── discord.py           # Discord webhook with ?wait=true
-│   │   ├── dpaste.py            # Zero-credential live public paste API
-│   │   ├── github_gist.py       # GitHub REST API v3 Gists
-│   │   ├── huggingface.py       # Hugging Face LLM discussions API
-│   │   ├── mastodon.py          # Fediverse statuses API
-│   │   ├── slack.py             # Slack incoming webhooks
-│   │   └── telegram.py          # Telegram Bot API with channel detection
+│   ├── main.py                  # FastAPI app & custom error handler
+│   ├── schemas.py               # Request/Response models & validators
+│   ├── config.py                # Environment configuration (Pydantic Settings)
+│   ├── platforms/               # Platform implementations
+│   │   ├── base.py              # BasePlatform abstract class & error mapping
+│   │   ├── bluesky.py
+│   │   ├── devto.py
+│   │   ├── discord.py
+│   │   ├── dpaste.py
+│   │   ├── github_gist.py
+│   │   ├── huggingface.py       # LLM platform integration
+│   │   ├── mastodon.py
+│   │   ├── slack.py
+│   │   └── telegram.py
 │   └── services/
-│       ├── __init__.py
 │       └── posting_service.py   # Asynchronous multi-platform orchestrator
 ├── logs/
-│   └── posting.log              # JSON-lines execution audit trail
+│   └── posting.log              # JSON lines execution logs
 ├── screenshots/
 │   └── swagger.png              # Swagger UI documentation capture
 ├── tests/
-│   ├── __init__.py
-│   ├── test_platforms.py        # Isolated platform tests with mocked HTTP transport
-│   ├── test_posting.py          # Orchestration, error mapping & fault tolerance
-│   └── test_validation.py       # Pydantic validation & HTTP 400 error handlers
-├── .env.example                 # Template for platform credentials
-├── .gitignore                   # Excludes .env, virtualenv, and test cache
-├── pytest.ini                   # Async test runner configuration
-├── requirements.txt             # Project dependencies
-├── sample_output.json           # Sample successful API response
-├── sample_validation.json       # Sample validation error response
+│   ├── test_platforms.py        # Isolated platform tests with mocked HTTP
+│   ├── test_posting.py          # Service orchestration & failure handling
+│   └── test_validation.py       # Pydantic & HTTP 400 validation tests
+├── .env.example
+├── pytest.ini
+├── requirements.txt
 └── README.md
 ```
 
----
-
-## Setup & Installation
-
-### 1. Prerequisites
-- Python 3.10+ (tested on Python 3.12 and 3.13)
-- pip
-
-### 2. Environment Setup
+## Setup
 
 ```bash
-# Clone the repository
-git clone https://github.com/<your-username>/<your-repo-name>.git
-cd <your-repo-name>
-
-# Create and activate virtual environment
 python -m venv .venv
-
-# On Windows:
 .venv\Scripts\activate
-# On Linux / macOS:
-source .venv/bin/activate
-
-# Install dependencies
 pip install -r requirements.txt
-
-# Copy environment template
-cp .env.example .env
+copy .env.example .env
 ```
 
-You can optionally populate any API keys you possess in `.env`. Any unconfigured platform safely defaults to a `failed` status with a descriptive `"Missing credentials: ..."` error.
+Fill `.env` for the platforms you want. Empty values come back as `failed` with a missing-credentials error.
 
----
-
-## Running the Application
-
-Start the local server using Uvicorn:
+## Run
 
 ```bash
 uvicorn app.main:app --host 0.0.0.0 --port 4000
 ```
 
-- **Interactive API Documentation (Swagger UI):** http://localhost:4000/docs
-- **Alternative Documentation (ReDoc):** http://localhost:4000/redoc
-- **Health Check Endpoint:** http://localhost:4000/
+Swagger UI: http://localhost:4000/docs
 
-### Swagger UI Preview
-
-![Swagger UI](screenshots/swagger.png)
-
----
-
-## API Usage & Examples
-
-### Endpoint
-```http
-POST http://localhost:4000/posting
-Content-Type: application/json
-```
-
-### Request Rules & Validation
-- **Maximum length:** 200 characters.
-- **CTA link requirement:** Exactly one valid `http://` or `https://` CTA URL must be present in the message.
-- **URL structure:** The link must contain a valid domain (e.g. `https://example.com`).
-- **Internal platform selection:** Handled automatically; client cannot pass a platform filter.
-
-### Sample Request (cURL)
+## Request
 
 ```bash
-curl -X POST http://localhost:4000/posting \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Check out our latest business platform and grow your online visibility. https://example.com"}'
+curl -X POST http://localhost:4000/posting -H "Content-Type: application/json" -d "{\"message\": \"Check out our latest business platform and grow your online visibility. https://example.com\"}"
 ```
-
-### Sample Success Response (HTTP 200)
 
 ```json
 {
-  "success": true,
-  "results": [
-    {
-      "platform": "Telegram",
-      "status": "failed",
-      "posted_url": null,
-      "public_access": false,
-      "date": null,
-      "time": null,
-      "error": "Missing credentials: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID"
-    },
-    {
-      "platform": "Discord",
-      "status": "failed",
-      "posted_url": null,
-      "public_access": false,
-      "date": null,
-      "time": null,
-      "error": "Missing credentials: DISCORD_WEBHOOK_URL"
-    },
-    {
-      "platform": "dpaste",
-      "status": "success",
-      "posted_url": "https://dpaste.com/FN9PA7MQL",
-      "public_access": true,
-      "date": "2026-11-16",
-      "time": "12:03:31",
-      "error": null
-    }
-  ]
+  "message": "Check out our latest business platform and grow your online visibility. https://example.com"
 }
 ```
 
-*Note: Overall `success` is `true` as long as at least one platform successfully posts.*
+## Validation
 
-### Sample Validation Failure (HTTP 400)
+- max 200 characters
+- exactly one `http`/`https` CTA link
+- that link must be a valid URL
+- empty / missing `message` is rejected
 
-When an invalid message is submitted (e.g. Missing CTA link, exceeding 200 characters, or invalid URL structure):
+Invalid input returns HTTP 400:
 
 ```json
 {
@@ -194,14 +103,58 @@ When an invalid message is submitted (e.g. Missing CTA link, exceeding 200 chara
 }
 ```
 
----
+## Success response
 
-## Running the Automated Test Suite
-
-The test suite contains **29 unit and integration tests** testing validation rules, fault isolation, timeout mappings, authentication error mappings, and platform payloads using mocked HTTP transports:
-
-```bash
-pytest -v
+```json
+{
+  "success": true,
+  "results": [
+    {
+      "platform": "dpaste",
+      "status": "success",
+      "posted_url": "https://dpaste.com/ABC123",
+      "public_access": true,
+      "date": "2026-11-16",
+      "time": "12:05:01",
+      "error": null
+    },
+    {
+      "platform": "Slack",
+      "status": "failed",
+      "posted_url": null,
+      "public_access": false,
+      "date": null,
+      "time": null,
+      "error": "Missing credentials: SLACK_WEBHOOK_URL"
+    }
+  ]
+}
 ```
 
-All tests execute completely offline without live external dependencies.
+`success` is true if at least one platform posted.
+
+Sample run: `sample_output.json`  
+Request log: `logs/posting.log`  
+
+### Swagger UI Screenshot
+
+![Swagger UI](screenshots/swagger.png)
+
+## Keys
+
+- Telegram: @BotFather token, chat id, optional public channel username
+- Discord: channel webhook
+- Slack: incoming webhook
+- Mastodon: app access token with `write:statuses`
+- GitHub: PAT with `gist`
+- Bluesky: handle + app password
+- Hugging Face: write token + `HF_REPO_ID` like `username/repo`
+- Dev.to: Settings → Extensions → API key
+
+## Tests
+
+```bash
+pytest -q
+```
+
+Tests cover validation cases, independent failures, auth/timeout mapping, and each platform's request/response with mocked HTTP.

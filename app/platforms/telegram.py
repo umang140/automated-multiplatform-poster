@@ -4,14 +4,9 @@ from app.platforms.base import BasePlatform
 
 
 class TelegramPlatform(BasePlatform):
-    """
-    Publishes to Telegram via Bot API sendMessage.
-    If the bot is posting to a public supergroup/channel, providing
-    TELEGRAM_CHANNEL_USERNAME builds a direct, public https://t.me link.
-    """
     name = "Telegram"
 
-    def missing_credentials(self) -> str | None:
+    def missing_credentials(self):
         return self._need(
             ("TELEGRAM_BOT_TOKEN", self.settings.telegram_bot_token),
             ("TELEGRAM_CHAT_ID", self.settings.telegram_chat_id),
@@ -26,7 +21,7 @@ class TelegramPlatform(BasePlatform):
         resp.raise_for_status()
         data = resp.json()
         if not data.get("ok"):
-            raise RuntimeError(data.get("description", "Telegram API returned ok=false"))
+            raise RuntimeError(data.get("description", "telegram error"))
 
         result = data.get("result") or {}
         msg_id = result.get("message_id")
@@ -37,5 +32,4 @@ class TelegramPlatform(BasePlatform):
         if username and msg_id:
             posted_url = f"https://t.me/{username}/{msg_id}"
 
-        # Channel messages with username are publicly accessible on the web
         return posted_url, bool(username)

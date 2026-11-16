@@ -6,13 +6,9 @@ from app.platforms.base import BasePlatform
 
 
 class DevToPlatform(BasePlatform):
-    """
-    Publishes an article update to Dev.to (Forem API v1).
-    Posts are public on dev.to by default when published=True.
-    """
     name = "Dev.to"
 
-    def missing_credentials(self) -> str | None:
+    def missing_credentials(self):
         return self._need(("DEVTO_API_KEY", self.settings.devto_api_key))
 
     async def publish(self, client: httpx.AsyncClient, message: str):

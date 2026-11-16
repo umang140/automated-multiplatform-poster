@@ -4,13 +4,9 @@ from app.platforms.base import BasePlatform
 
 
 class HuggingFacePlatform(BasePlatform):
-    """
-    Publishes to Hugging Face Hub community discussions.
-    Satisfies the practical test requirement for integrating supported LLM platforms.
-    """
     name = "Hugging Face"
 
-    def missing_credentials(self) -> str | None:
+    def missing_credentials(self):
         return self._need(
             ("HF_TOKEN", self.settings.hf_token),
             ("HF_REPO_ID", self.settings.hf_repo_id),
@@ -23,7 +19,7 @@ class HuggingFacePlatform(BasePlatform):
             f"https://huggingface.co/api/{repo_type}/{repo_id}/discussions",
             headers={"Authorization": f"Bearer {self.settings.hf_token}"},
             json={
-                "title": "Automated Platform Update",
+                "title": "Automated post",
                 "description": message,
                 "pullRequest": False,
             },

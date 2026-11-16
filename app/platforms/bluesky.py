@@ -6,15 +6,9 @@ from app.platforms.base import BasePlatform
 
 
 class BlueskyPlatform(BasePlatform):
-    """
-    Publishes a post to Bluesky using the AT Protocol (Authenticated Transfer Protocol).
-    Performs a two-step handshake:
-    1. com.atproto.server.createSession to obtain access JWT and user DID
-    2. com.atproto.repo.createRecord in the app.bsky.feed.post collection
-    """
     name = "Bluesky"
 
-    def missing_credentials(self) -> str | None:
+    def missing_credentials(self):
         return self._need(
             ("BLUESKY_HANDLE", self.settings.bluesky_handle),
             ("BLUESKY_APP_PASSWORD", self.settings.bluesky_app_password),
@@ -23,7 +17,6 @@ class BlueskyPlatform(BasePlatform):
     async def publish(self, client: httpx.AsyncClient, message: str):
         pds = (self.settings.bluesky_pds_url or "https://bsky.social").rstrip("/")
 
-        # Step 1: Create session with user handle and App Password
         login = await client.post(
             f"{pds}/xrpc/com.atproto.server.createSession",
             json={
@@ -34,7 +27,6 @@ class BlueskyPlatform(BasePlatform):
         login.raise_for_status()
         session = login.json()
 
-        # Step 2: Create post record
         created = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         post = await client.post(
             f"{pds}/xrpc/com.atproto.repo.createRecord",
@@ -51,7 +43,6 @@ class BlueskyPlatform(BasePlatform):
         )
         post.raise_for_status()
 
-        # Extract record key from at:// DID URI to build public web link
         uri = post.json().get("uri", "")
         rkey = uri.rsplit("/", 1)[-1] if uri else None
         handle = session.get("handle") or self.settings.bluesky_handle
